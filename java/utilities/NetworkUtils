@@ -1,0 +1,105 @@
+/*
+ * Copyright (C) 2018 Adam Z Winter
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.example.android.datafrominternet.utilities;
+
+import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.util.Log;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+//import java.security.KeyFactorySpi;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+import org.spongycastle.asn1.eac.PublicKeyDataObject;
+import org.spongycastle.openssl.MiscPEMGenerator;
+import org.spongycastle.util.encoders.Base64;
+import org.spongycastle.util.io.pem.PemGenerationException;
+import org.spongycastle.util.io.pem.PemObject;
+import org.spongycastle.util.io.pem.PemObjectGenerator;
+import org.spongycastle.util.io.pem.PemWriter;
+import java.security.spec.RSAPublicKeySpec;
+import org.spongycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi;
+import java.math.BigInteger;
+
+
+public class NetworkUtils {
+
+     static URL url = null;
+
+    public static void buildUrl() {
+        String POST_URL = "http://anticoins.org/testpost/testpost.php";
+        Uri builtUri = Uri.parse(POST_URL);
+        try {
+            url = new URL(builtUri.toString());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String getResponseFromPost(TransactionComponents transactionComponents) throws IOException {
+        String postParameters = CryptoEncoding.getDataToPost(transactionComponents);
+        buildUrl();
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+        try {
+            urlConnection.setRequestMethod("POST");
+            urlConnection.setDoOutput(true);
+            DataOutputStream dStream = new DataOutputStream(urlConnection.getOutputStream());
+            dStream.writeBytes(postParameters);
+            dStream.flush();
+            dStream.close();
+
+            InputStream in = urlConnection.getInputStream();
+            Scanner scanner = new Scanner(in);
+            scanner.useDelimiter("\\A");
+
+            boolean hasInput = scanner.hasNext();
+            if (hasInput) {
+                return scanner.next();
+//                return postParameters;
+            } else {
+//                return null;
+                return "Error transmitting";
+            }
+        } finally {
+            urlConnection.disconnect();
+        }
+
+    }
+
+
+}
