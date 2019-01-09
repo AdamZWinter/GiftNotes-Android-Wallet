@@ -1,0 +1,207 @@
+package com.example.android.datafrominternet.utilities;
+
+import android.util.Log;
+
+import com.example.android.datafrominternet.MainActivity;
+
+import org.spongycastle.util.encoders.Base64;
+
+import java.io.StringWriter;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.interfaces.RSAPublicKey;
+import java.util.ArrayList;
+
+public class CryptoEncoding {
+
+    public static String getDataToPost(TransactionComponents transactionComponents) throws SecurityException {
+        // String[] outputArray = {"","",""};   //You have to initialize this array with all three quotes inside.
+        ArrayList outputArrayList = new ArrayList();
+        String publicKeyString = null;
+        String privateKeyString = null;
+        KeyPairGenerator keyPairGen = null;
+        String caughthere = "Initialization string for catch";
+        //String message = "This is the message that is now being signed and posted.";
+        String message = transactionComponents.getMessage();
+        String stringSignature = "This is the initialization string, mofo.";
+
+        try {
+            keyPairGen = KeyPairGenerator.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            caughthere = "Caught at NoSuchAlgorithm";
+        }
+        keyPairGen.initialize(4096);  //512 character key with 2048
+        KeyPair keyPair = null;
+        try {
+            keyPair = keyPairGen.generateKeyPair();
+        } catch (Exception e) {
+            caughthere = "Caught at generateKeyPair";
+        }
+
+        PublicKey objectPublicKey = keyPair.getPublic();
+        PrivateKey objectPrivateKey = keyPair.getPrivate();
+//        publicKeyString = objectPublicKey.toString();
+        RSAPublicKey objectPublicKeyRSA = (RSAPublicKey) keyPair.getPublic();
+        String stringModulus = objectPublicKeyRSA.getModulus().toString();
+        String stringExponent = objectPublicKeyRSA.getPublicExponent().toString();
+        privateKeyString = objectPrivateKey.toString();
+
+        byte[] messageBytes = message.getBytes();
+        byte[] signature = "".getBytes();
+//        byte[] otherMessageBytes = "This is a different message and now it is longer than it was before so yeah".getBytes();
+//        byte[] otherSignature = "".getBytes();
+        try {
+            Signature s = Signature.getInstance("SHA512withRSA");
+            s.initSign(objectPrivateKey);
+            s.update(messageBytes);
+            signature = s.sign();
+            stringSignature = new String(signature);
+            Log.d("*******LOOK HERE*******", stringSignature);
+
+//            s.update(otherMessageBytes);
+//            otherSignature = s.sign();
+//            signatureString = signature.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            message = "Caught at NoSuchAlgorithm";
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            message = "Caught at InvalidKey";
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            message = "Caught at SignatureException";
+        }
+
+        try {
+            Signature objectVerifiable = Signature.getInstance("SHA512withRSA");
+            objectVerifiable.initVerify(objectPublicKey);
+            objectVerifiable.update(messageBytes);
+//            objectVerifiable.update(otherMessageBytes);
+            Boolean isVerified = objectVerifiable.verify(signature);
+//            Boolean isVerified = objectVerifiable.verify(otherSignature);
+            if(isVerified==true){
+                caughthere = "within Android: Before POST, Signature successfully verified";
+            }else {
+                caughthere = "NO, signature NOT verified";
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            caughthere = "NoSuchAlgorithm in verify";
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+            caughthere = "InvalidKey in verify";
+        } catch (SignatureException e) {
+            e.printStackTrace();
+            caughthere = "SignatureException in verify";
+        }
+
+//   *************************************************************
+//        StringWriter writer = new StringWriter();
+//        MyWriter myObjectWrites = new MyWriter(writer);
+//        String myNewString = "I want to see this repeated back to me.";
+//
+//        try {
+//            myObjectWrites.writeTest(myNewString);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        try {
+//            myObjectWrites.flush();
+//            myObjectWrites.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        publicKeyString = writer.toString();
+//    *****************************************************************
+
+        byte[]  encoding;
+        encoding = objectPublicKey.getEncoded();
+        encoding = Base64.encode(encoding);
+        StringWriter writer = new StringWriter();
+        for (int i = 0; i < encoding.length; i += 64)
+        {
+            char[]  buffer = new char[64];
+            int index = 0;
+
+            while (index != buffer.length)
+            {
+                if ((i + index) >= encoding.length)
+                {
+                    break;
+                }
+                buffer[index] = (char)encoding[i + index];
+                index++;
+            }
+            String singleLine64char = new String (buffer);
+            writer.write(singleLine64char+"\n");
+        }
+        publicKeyString = "-----BEGIN PUBLIC KEY-----\n"+writer.toString()+"-----END PUBLIC KEY-----";
+
+//        *********************************************************************
+//        StringWriter writer = new StringWriter();
+//        PemWriter pemWriter = new PemWriter(writer);
+//        try {
+//            pemWriter.writeObject(new PemObject("PUBLIC KEY", objectPublicKey.getEncoded()));
+//            pemWriter.flush();
+//            pemWriter.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        publicKeyString = writer.toString();
+
+//        ********************************************************************************
+
+//
+//        publicKeyString ="-----BEGIN PUBLIC KEY-----\n" +
+//                "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3Rsr4gM3phrypTWNFk7q\n" +
+//                "sfx5LS8WKfgOfjMICOVI3le3QmZ8MqUaDlO/zdFYM9SpaSawTv9aQR1/h4BqhA6P\n" +
+//                "QvvvMGCpIqtaueOFBbh3B/VjPij4C8xkdqYYiFUvtIEUpTq24Rr9WsA2yE3SMxIS\n" +
+//                "3cuOULD0qsDqmmCau0IS0N5Bp2IZ5AelQeYyYSbyhT/MobBkVRK0xXPp4kEga7ce\n" +
+//                "pUaCH3zYfhnYzJJq/grctpkRfbWfgrxB6ToqEJG1LujZBGqOEUc5+BYnF+dF0sj3\n" +
+//                "mNlWWjjr1xUXsuhACo/7YmxZAPBcGiLgpkqSXhYw+jCXyJ4f26QxAMK+6bQ8NDin\n" +
+//                "KwIDAQAB\n" +
+//                "-----END PUBLIC KEY-----";
+//        String base64encodedSigString = "S4AqFlt/6AnMOBaNUb26j33M8jrsO1JQNcCFaChEDQJgWWdYn2dPpT3HSefzXd4Q0kfg8GPP50DorW8tGxFkLfU4K8qdjNjKfZhxY77BUwi/KF+898vcd/gzzubInAF4AOlVx5p1Wk+54QNZ8ZUF37NLIiErubuqywlv36BklOo5InvG30Wal4u5nQPIjOEzM+MIhGh+UuXqx7T9HX0+H6Qw92jW0roC/DkXXeI1/ogN9oOiUtB20M9n3cBiwVDWFAA/JPxLCVs27THaocy5Gm2MFZn+BRMuqFhShQOkeB3OMPttqhwntCTr7bf10qg6F3eKcagMYl/yDZJsl8er9Q==";
+//        stringSignature = base64encodedSigString;
+//        base64encodedSigString = base64encodedSigString.replace('+','!');
+//        message ="This is, hopefully, the first thing I will ever encrypt......then decrypt.";
+        //        ********************************************************************************
+
+        stringSignature= new String(Base64.encode(signature));
+        stringSignature = stringSignature.replace('+','!');
+        stringSignature = stringSignature.replace('/','.');
+        publicKeyString = publicKeyString.replace('+', '!');
+        publicKeyString = publicKeyString.replace('/', '.');
+
+        outputArrayList.add("universalkey=tyson");
+        outputArrayList.add("&publickey="+publicKeyString);
+        outputArrayList.add("&message="+message);
+        outputArrayList.add("&signature="+stringSignature);
+        outputArrayList.add("&privatekey="+privateKeyString);
+        outputArrayList.add("&caught="+caughthere);
+
+        Log.d("LOOK HERE", publicKeyString);
+        Log.d("MODULUS", stringModulus);
+        Log.d("EXPONENT", stringExponent);
+
+        String postParameters;
+        StringBuilder builtString = new StringBuilder();
+        for (Object parameterObject:outputArrayList)
+        {
+            String parameterString = parameterObject.toString();
+            builtString.append(parameterString);
+        }
+        postParameters = builtString.toString();
+
+        return postParameters;
+    }
+
+
+}
