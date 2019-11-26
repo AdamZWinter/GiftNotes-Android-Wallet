@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2018 Adam Z Winter
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
+ package org.giftnotes.anticoin.TransactionTypes;
+
+import android.util.Log;
+import java.util.ArrayList;
+
+public class NewHandle {
+
+    public NewHandle(){
+        super();
+    }
+
+    private String type = "newHandle";
+    public String getType(){
+        return type;
+    }
+
+    private String chain = "participants";
+    public String getChain(){
+        return chain;
+    }
+
+    private String usher;
+    public void setUsher (String usherSet){
+        this.usher=usherSet;
+    }
+    public String getUsher(){
+        return usher;
+    }
+
+    private String handle;
+    public void setHandle (String handleSet){
+        this.handle=handleSet;
+    }
+    public String getHandle(){
+        return handle;
+    }
+
+    private String keyType = "default";
+    public void setKeyType (String keyTypeSet){
+        this.keyType=keyTypeSet;
+    }
+    public String getKeyType(){
+        return keyType;
+    }
+
+    private String publicKey;
+    public void setPublicKey (String publicKeySet){this.publicKey=publicKeySet;}
+    public String getPublicKey(){return publicKey;}
+
+    private String dataToSign;
+    public void setDataToSign (){
+        this.dataToSign=type+chain+usher+handle+keyType+publicKey;
+    }
+    public String getDataToSign(){
+        return dataToSign;
+    }
+
+    private String signature;
+    public void setSignature (String signatureSet){
+        this.signature=signatureSet;
+    }
+    public String getSignature(){
+        return signature;
+    }
+
+    private String postThisString;
+    public String setPostThisString (){
+        ArrayList ArrayList = new ArrayList();
+        ArrayList.add("type="+this.type);
+        ArrayList.add("&chain="+this.chain);
+        ArrayList.add("&usher="+this.usher);
+        ArrayList.add("&handle="+this.handle);
+        ArrayList.add("&keyType="+this.keyType);
+        ArrayList.add("&publicKey="+this.publicKey);
+        ArrayList.add("&signature="+this.signature);
+        ArrayList.add("&dataToSign="+this.dataToSign);
+
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Object components:ArrayList)
+        {
+            String component = components.toString();
+            stringBuilder.append(component);
+        }
+        postThisString = stringBuilder.toString();
+        Log.d("*******LOOK HERE*******", postThisString);
+        return postThisString;
+    }
+    public String getPostThisString (){
+        return postThisString;
+    }
+
+}
+
