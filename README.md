@@ -1,2 +1,2 @@
 # GiftNotes-Android-Wallet
-Android wallet for Gift Notes.
+Android Studio:  Android wallet for Gift Notes.
