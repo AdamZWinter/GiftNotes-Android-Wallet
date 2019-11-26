@@ -1,0 +1,208 @@
+package org.giftnotes.anticoin.utilities;
+
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.util.Base64;
+import android.util.Log;
+
+import java.io.CharArrayWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.util.Enumeration;
+
+import javax.crypto.KeyGenerator;
+
+public class Account extends Object{
+
+    public Account(){super();}
+
+    String KsAlias = "alias4keys";
+    //public void setKsAlias (String alias){this.KsAlias=alias;}
+    public String getKsAlias () {return KsAlias;}
+
+    String infoAlias = "alias4userInfo";
+    public String getInfoAlias () {return infoAlias;}
+
+    private boolean isEst;
+    public boolean isEstablish (){
+        try {
+            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+            ks.load(null);
+            if(ks.containsAlias(KsAlias) & ks.containsAlias(infoAlias)){isEst = true;}
+            else {isEst = false;}
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return isEst;
+    }
+
+
+    public boolean Establish (String strHandle, String strFirst, String strLast){
+        if(!this.isEstablish()){
+            this.storeKey();
+            this.storeInfo(infoAlias, strHandle, strFirst, strLast);
+        }
+        return this.isEstablish();
+    }
+
+
+    KeyPairGenerator kpGenerator;
+    PublicKey objectPublicKey;
+    PrivateKey objectPrivateKey;
+    byte[] signature = null;
+    byte[] dataBytes = null;
+
+
+    public void storeKey(){
+        try {
+            kpGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA, "AndroidKeyStore");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        }
+        try {
+            kpGenerator.initialize(new KeyGenParameterSpec.Builder(KsAlias, KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_VERIFY).setDigests(KeyProperties.DIGEST_SHA512).build());
+        } catch (InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
+        //512 character key with 2048
+        try {
+            KeyPair keyPair = kpGenerator.generateKeyPair();
+            objectPublicKey = keyPair.getPublic();               //test purposes
+            objectPrivateKey = keyPair.getPrivate();              //test purposes
+
+            StringBuilder pkAliases = new StringBuilder();
+            String strAliases;
+
+            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+            ks.load(null);
+            Enumeration<String> aliases = ks.aliases();
+            while (aliases.hasMoreElements()){
+                pkAliases.append(aliases.nextElement()+"\n");
+            }
+            strAliases = pkAliases.toString();
+            Log.d("****LOOK HERE***", strAliases);
+
+            Certificate certificate = ks.getCertificate(KsAlias);
+            PublicKey publicKey = certificate.getPublicKey();
+
+            byte[] encoding;
+            encoding = objectPublicKey.getEncoded();
+            encoding = Base64.encode(encoding, 2);
+            StringWriter writer = new StringWriter();
+            int j = 0;
+            while (j != encoding.length) {
+                writer.write(encoding[j]);
+                j++;
+            }
+            String strPubKey1 = writer.toString();
+            strPubKey1 = strPubKey1.replaceAll("\\s+","");
+            Log.d("PUBLIC KEY 1", strPubKey1);
+
+            byte[] encoding2;
+            encoding2 = publicKey.getEncoded();
+            encoding2 = Base64.encode(encoding2, 2);
+            StringWriter writer2 = new StringWriter();
+            int i = 0;
+            while (i != encoding2.length) {
+                writer2.write(encoding2[i]);
+                i++;
+            }
+            String strPubKey2 = writer2.toString();
+            strPubKey2 = strPubKey2.replaceAll("\\s+","");
+            Log.d("PUBLIC KEY 2", strPubKey2);
+
+            if(strPubKey1.equals(strPubKey2)){Log.d("Check this: ", "The two forms are exactly the same.");}
+            else {Log.d("hmm", "Not exactly the same apparently");}
+
+            Key key = ks.getKey(KsAlias, null);
+            PrivateKey privateKey = (PrivateKey)key;
+
+            Signature s = Signature.getInstance("SHA512withRSA");
+            s.initSign(privateKey);
+            s.update(dataBytes);
+            this.signature = s.sign();
+
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (UnrecoverableKeyException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public void storeInfo (String alias, String strHandle, String strFirst, String strLast){
+        //Encrypting portable data file with proprietary encryption instead.
+        
+        String info = "Handle="+strHandle+"&FirstName="+strFirst+"&LastName="+strLast;
+        byte[] bytes = info.getBytes(StandardCharsets.UTF_8);
+        
+    }
+
+
+
+    public void deleteAll (){
+
+        try {
+            KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+            ks.load(null);
+            if(ks.containsAlias("blood")){Log.d("****HERE", "Blood exists now");}
+            Enumeration<String> aliases = ks.aliases();
+            while (aliases.hasMoreElements()){
+                ks.deleteEntry(aliases.nextElement());
+              }
+            if(!ks.containsAlias(KsAlias)){Log.d("*****HERE", "No key alias exists");}
+            if(!ks.containsAlias(infoAlias)){Log.d("****HERE", "No info alias either");}
+            if(!ks.containsAlias("blood")){Log.d("****HERE", "Blood is gone");}
+
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
+    }
+    
+
+
+}
