@@ -1,0 +1,126 @@
+package org.giftnotes.anticoin.utilities;
+
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
+import android.util.Base64;
+import android.util.Log;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.util.Enumeration;
+
+public class Crypto extends Object{
+
+    public Crypto(){
+        super();
+    }
+
+    String publicKeyString;
+    KeyPairGenerator keyPairGen;
+    KeyPairGenerator kpGenerator;
+    String stringSignature;
+    PublicKey objectPublicKey;
+    PrivateKey objectPrivateKey;
+    byte[] signature = null;
+    byte[] dataBytes = null;
+
+
+    public void generateKeys(){
+        try {
+            keyPairGen = KeyPairGenerator.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        keyPairGen.initialize(2048);  //512 character key with 2048
+        try {
+            KeyPair keyPair = keyPairGen.generateKeyPair();
+            objectPublicKey = keyPair.getPublic();
+            objectPrivateKey = keyPair.getPrivate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void pemWriter() {
+        byte[] encoding;
+        encoding = objectPublicKey.getEncoded();
+        encoding = Base64.encode(encoding, 2);
+        StringWriter writer = new StringWriter();
+        int j = 0;
+        while (j != encoding.length) {
+            writer.write(encoding[j]);
+            if ((j+1) % 64 == 0) { writer.write("\n"); }
+            j++;
+        }
+        publicKeyString ="-----BEGIN PUBLIC KEY-----\n"+writer.toString()+"\n-----END PUBLIC KEY-----";
+        publicKeyString = publicKeyString.replace('+', '!');
+        this.publicKeyString = publicKeyString.replace('/', '.');
+    }
+
+    public String getPublicKeyString(){return publicKeyString;}
+
+    public void useDefaultKey (){
+        // load default stored key for signing:  set objectPrivateKey
+
+    }
+
+    public void sign(String Data) {
+        try {
+            this.dataBytes = Data.getBytes();
+            Signature s = Signature.getInstance("SHA512withRSA");
+            s.initSign(objectPrivateKey);
+            s.update(dataBytes);
+            this.signature = s.sign();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        }
+
+        stringSignature= new String(Base64.encode(signature, 2));
+        stringSignature = stringSignature.replace('+','!');
+        this.stringSignature = stringSignature.replace('/','.');
+
+        try {
+            Signature objectVerifiable = Signature.getInstance("SHA512withRSA");
+            objectVerifiable.initVerify(objectPublicKey);
+            objectVerifiable.update(dataBytes);
+            Boolean isVerified = objectVerifiable.verify(signature);
+            if (isVerified) {
+                Log.d("*******LOOK HERE*******", "Signature successfully verified");
+            } else {
+                Log.d("*******LOOK HERE*******", "signature NOT verified");
+            }
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public String getStringSignature(){
+        return stringSignature;
+    }
+
+}
