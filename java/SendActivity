@@ -19,7 +19,7 @@ public class SendActivity extends AppCompatActivity {
     private EditText sRecipient;
     private EditText sAmount;
     private Button sButtonSend;
-    private TextView sStringDisply;
+    private TextView sStringDisplay;
 
     Send send = new Send();
     Crypto objectCrypto = new Crypto();
@@ -29,7 +29,7 @@ public class SendActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_send);
 
-        sStringDisply = findViewById(R.id.tv_send_string2_post);
+        sStringDisplay = findViewById(R.id.tv_send_string2_post);
         sResults = findViewById(R.id.tv_send_results);
         sRecipient = findViewById(R.id.recipient);
         sAmount = findViewById(R.id.amount);
@@ -40,6 +40,7 @@ public class SendActivity extends AppCompatActivity {
                 transmit();
             }
         });
+        sResults.setText("Handle for this user is: "+MainActivity.getHandle());
 
     }
 
@@ -50,12 +51,12 @@ public class SendActivity extends AppCompatActivity {
         send.setDataToSign();
         //objectCrypto.useDefaultKey();
         objectCrypto.generateKeys();   //only for test purposes
-        objectCrypto.sign(send.getDataToSign());
-        send.setSignature(objectCrypto.getStringSignature());
+        //objectCrypto.sign(send.getDataToSign());
+        //send.setSignature(objectCrypto.getStringSignature());
         new networkTask().execute();
     }
 
-    public class networkTask extends AsyncTask<Void, Void, String> {
+    private class networkTask extends AsyncTask<Void, Void, String> {
         @Override
         protected String doInBackground(Void... voids) {
             String POST_URL = "http://anticoins.org/decentralizeATT/post.php";
@@ -74,7 +75,7 @@ public class SendActivity extends AppCompatActivity {
         protected void onPostExecute(String displayResults) {
             if (displayResults != null) {
                 sResults.setText(displayResults);
-                sStringDisply.setText(send.getPostThisString());
+                sStringDisplay.setText(send.getPostThisString());
                 Log.d("**RESULTS FROM PHP**", displayResults);
             }else {
                 sResults.setText("NULL Results Fail");
